@@ -44,7 +44,7 @@ Estos cuadernos están orientados tanto a principiantes como a personas que dese
 
 ¡Las contribuciones son bienvenidas! Si encuentras errores, quieres proponer mejoras o agregar nuevos notebooks, siéntete libre de hacer un pull request.
 
-##📄 Licencia
+## 📄 Licencia
 
 Este proyecto está licenciado bajo la licencia MIT.
 
