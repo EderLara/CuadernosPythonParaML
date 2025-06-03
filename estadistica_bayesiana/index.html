@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorador Interactivo de Estadística Bayesiana</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/2.2.1/chartjs-plugin-annotation.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container { position: relative; width: 100%; max-width: 700px; margin-left: auto; margin-right: auto; height: 320px; max-height: 40vh; }
+        .tab-active { border-color: #3b82f6; color: #3b82f6; font-weight: 600; }
+        .tab-inactive { border-color: transparent; }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .app-card { transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; }
+        .app-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-slate-900">Explorador Interactivo de Estadística Bayesiana</h1>
+            <p class="mt-2 text-lg text-slate-600">Una herramienta para entender los conceptos clave de forma visual e interactiva.</p>
+        </header>
+
+        <nav class="mb-8 border-b border-slate-200">
+            <ul class="flex flex-wrap -mb-px justify-center">
+                <li class="mr-2"><a href="#bayes-theorem" class="nav-tab inline-block p-4 border-b-2 rounded-t-lg tab-active">Teorema de Bayes</a></li>
+                <li class="mr-2"><a href="#distributions" class="nav-tab inline-block p-4 border-b-2 rounded-t-lg tab-inactive">Distribuciones</a></li>
+                <li class="mr-2"><a href="#inference" class="nav-tab inline-block p-4 border-b-2 rounded-t-lg tab-inactive">Inferencia</a></li>
+                <li class="mr-2"><a href="#comparison" class="nav-tab inline-block p-4 border-b-2 rounded-t-lg tab-inactive">Comparación</a></li>
+                <li class="mr-2"><a href="#applications" class="nav-tab inline-block p-4 border-b-2 rounded-t-lg tab-inactive">Aplicaciones</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <section id="bayes-theorem" class="page-content">
+                <div class="text-center mb-8 max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-bold mb-2">1. El Teorema de Bayes en Acción</h2>
+                    <p class="text-slate-600">El Teorema de Bayes nos permite actualizar nuestras creencias a la luz de nueva evidencia. Aquí puedes explorar el ejemplo clásico de una prueba médica. Manipula los controles para ver cómo la probabilidad de tener una enfermedad cambia después de un resultado positivo en la prueba.</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div class="space-y-6">
+                            <div>
+                                <label for="prevalence" class="font-medium">Prevalencia de la enfermedad (Prior): <span id="prevalence-value" class="font-bold text-blue-600">1%</span></label>
+                                <input id="prevalence" type="range" min="0.1" max="50" value="1" step="0.1" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                                <p class="text-sm text-slate-500 mt-1">Es la probabilidad de que una persona al azar tenga la enfermedad, P(H).</p>
+                            </div>
+                            <div>
+                                <label for="sensitivity" class="font-medium">Sensibilidad de la prueba: <span id="sensitivity-value" class="font-bold text-blue-600">99%</span></label>
+                                <input id="sensitivity" type="range" min="50" max="99.9" value="99" step="0.1" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                                 <p class="text-sm text-slate-500 mt-1">Probabilidad de dar positivo si se tiene la enfermedad, P(E|H).</p>
+                            </div>
+                            <div>
+                                <label for="false-positive" class="font-medium">Tasa de Falsos Positivos: <span id="false-positive-value" class="font-bold text-blue-600">5%</span></label>
+                                <input id="false-positive" type="range" min="0.1" max="20" value="5" step="0.1" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                                 <p class="text-sm text-slate-500 mt-1">Probabilidad de dar positivo si NO se tiene la enfermedad, P(E|¬H).</p>
+                            </div>
+                        </div>
+
+                        <div class="text-center bg-slate-50 p-6 rounded-lg">
+                            <h3 class="text-xl font-semibold">Probabilidad de tener la enfermedad (Posterior)</h3>
+                            <p class="text-5xl font-bold text-blue-600 my-4" id="posterior-prob-display">16.7%</p>
+                            <p class="text-slate-600">Esta es tu creencia actualizada, P(H|E), después de observar un resultado positivo.</p>
+                        </div>
+                    </div>
+                    <div class="mt-8">
+                        <div class="chart-container">
+                            <canvas id="bayes-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="distributions" class="page-content hidden">
+                <div class="text-center mb-8 max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-bold mb-2">2. Distribuciones de Probabilidad Clave</h2>
+                    <p class="text-slate-600">En la estadística bayesiana, representamos nuestra incertidumbre con distribuciones. La **distribución prior** (creencia inicial) se combina con la **verosimilitud** (evidencia de los datos) para formar la **distribución posterior** (creencia actualizada). Aquí, exploramos cómo estimar la probabilidad de que una moneda salga 'Cara' (p).</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <div class="grid lg:grid-cols-3 gap-6 mb-6 text-center">
+                        <div class="bg-slate-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-lg">1. Define tu Creencia Inicial (Prior)</h3>
+                             <p class="text-sm text-slate-500 mb-2">Usamos una distribución Beta. Alfa y Beta definen su forma.</p>
+                            <div class="flex gap-4">
+                                <div class="w-1/2">
+                                    <label for="prior-alpha" class="text-sm font-medium">Alfa (α)</label>
+                                    <input type="number" id="prior-alpha" value="2" min="0.1" step="0.1" class="w-full p-2 border rounded">
+                                </div>
+                                <div class="w-1/2">
+                                    <label for="prior-beta" class="text-sm font-medium">Beta (β)</label>
+                                    <input type="number" id="prior-beta" value="2" min="0.1" step="0.1" class="w-full p-2 border rounded">
+                                </div>
+                            </div>
+                        </div>
+                         <div class="bg-slate-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-lg">2. Recolecta Datos (Verosimilitud)</h3>
+                            <p class="text-sm text-slate-500 mb-2">Simula lanzamientos de moneda.</p>
+                            <div class="flex gap-4">
+                               <div class="w-1/2">
+                                    <label for="trials" class="text-sm font-medium">Lanzamientos</label>
+                                    <input type="number" id="trials" value="20" min="0" class="w-full p-2 border rounded">
+                                </div>
+                               <div class="w-1/2">
+                                    <label for="heads" class="text-sm font-medium">Caras</label>
+                                    <input type="number" id="heads" value="15" min="0" class="w-full p-2 border rounded">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-lg">3. Obtén tu Creencia Actualizada (Posterior)</h3>
+                            <p class="text-sm text-slate-500 mb-2">La posterior es una nueva distribución Beta.</p>
+                             <p class="text-slate-800">Posterior: Beta(<span id="post-alpha">17</span>, <span id="post-beta">7</span>)</p>
+                        </div>
+                    </div>
+                     <div class="chart-container h-96 max-h-[50vh]">
+                        <canvas id="distributions-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="inference" class="page-content hidden">
+                 <div class="text-center mb-8 max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-bold mb-2">3. Inferencia Bayesiana</h2>
+                    <p class="text-slate-600">La distribución posterior es la base de toda la inferencia bayesiana. Podemos resumirla con **estimaciones puntuales** (un solo valor) o **intervalos de credibilidad** (un rango de valores plausibles). Estos resultados provienen directamente de la distribución posterior que calculamos en la sección anterior.</p>
+                </div>
+                 <div class="bg-white p-6 rounded-xl shadow-md">
+                     <div class="grid md:grid-cols-2 gap-8">
+                         <div>
+                            <div class="chart-container h-96 max-h-[50vh]">
+                                <canvas id="posterior-summary-chart"></canvas>
+                            </div>
+                         </div>
+                         <div class="space-y-4">
+                            <h3 class="text-xl font-semibold mb-4">Resumen de la Distribución Posterior</h3>
+                            <div class="bg-slate-50 p-4 rounded-lg">
+                                <h4 class="font-semibold">Estimaciones Puntuales</h4>
+                                <ul class="list-disc list-inside text-slate-700">
+                                    <li>Moda (MAP): <span id="map-value" class="font-bold text-blue-600">0.727</span></li>
+                                    <li>Media: <span id="mean-value" class="font-bold text-blue-600">0.708</span></li>
+                                    <li>Mediana: <span id="median-value" class="font-bold text-blue-600">0.714</span></li>
+                                </ul>
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded-lg">
+                                <h4 class="font-semibold">Intervalo de Credibilidad</h4>
+                                <div class="flex items-center gap-4 my-2">
+                                    <input type="range" id="cred-interval-slider" min="50" max="99" value="95" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                                    <span id="cred-interval-value" class="font-bold text-blue-600">95%</span>
+                                </div>
+                                <p class="text-center text-slate-700">El parámetro `p` está entre <span id="cred-interval-range" class="font-bold">0.50 y 0.87</span> con un 95% de probabilidad.</p>
+                            </div>
+                         </div>
+                     </div>
+                 </div>
+            </section>
+
+            <section id="comparison" class="page-content hidden">
+                 <div class="text-center mb-8 max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-bold mb-2">4. Bayesiana vs. Frecuentista</h2>
+                    <p class="text-slate-600">La estadística bayesiana y la frecuentista son dos enfoques diferentes para la inferencia estadística. Ambas tienen fortalezas y debilidades. Haz clic en cada concepto para ver una comparación lado a lado de sus perspectivas.</p>
+                </div>
+                <div class="space-y-4 max-w-4xl mx-auto">
+                    <div class="accordion-item bg-white rounded-lg shadow-md">
+                        <button class="accordion-header w-full flex justify-between items-center p-5 text-left font-semibold">
+                            <span>Definición de Probabilidad</span>
+                            <span class="accordion-icon text-2xl text-slate-500">+</span>
+                        </button>
+                        <div class="accordion-content px-5 pb-5">
+                            <div class="grid md:grid-cols-2 gap-4 pt-4 border-t">
+                                <div><h4 class="font-bold">Bayesiana</h4><p>Grado de creencia o incertidumbre sobre una proposición.</p></div>
+                                <div><h4 class="font-bold">Frecuentista</h4><p>Frecuencia relativa a largo plazo de un evento en experimentos repetidos.</p></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item bg-white rounded-lg shadow-md">
+                        <button class="accordion-header w-full flex justify-between items-center p-5 text-left font-semibold">
+                            <span>Tratamiento de Parámetros</span>
+                            <span class="accordion-icon text-2xl text-slate-500">+</span>
+                        </button>
+                        <div class="accordion-content px-5 pb-5">
+                             <div class="grid md:grid-cols-2 gap-4 pt-4 border-t">
+                                <div><h4 class="font-bold">Bayesiana</h4><p>Los parámetros son variables aleatorias que tienen distribuciones de probabilidad (prior y posterior).</p></div>
+                                <div><h4 class="font-bold">Frecuentista</h4><p>Los parámetros son constantes fijas pero desconocidas. No tienen distribuciones de probabilidad.</p></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item bg-white rounded-lg shadow-md">
+                        <button class="accordion-header w-full flex justify-between items-center p-5 text-left font-semibold">
+                            <span>Interpretación de Intervalos</span>
+                             <span class="accordion-icon text-2xl text-slate-500">+</span>
+                        </button>
+                        <div class="accordion-content px-5 pb-5">
+                             <div class="grid md:grid-cols-2 gap-4 pt-4 border-t">
+                                <div><h4 class="font-bold">Intervalo de Credibilidad (Bayes)</h4><p>"Hay un 95% de probabilidad de que el verdadero valor del parámetro se encuentre dentro de este intervalo".</p></div>
+                                <div><h4 class="font-bold">Intervalo de Confianza (Frecuentista)</h4><p>"Si repitiéramos el muestreo muchas veces, el 95% de los intervalos de confianza calculados contendrían el verdadero valor del parámetro".</p></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item bg-white rounded-lg shadow-md">
+                        <button class="accordion-header w-full flex justify-between items-center p-5 text-left font-semibold">
+                            <span>Uso de Información Previa</span>
+                             <span class="accordion-icon text-2xl text-slate-500">+</span>
+                        </button>
+                        <div class="accordion-content px-5 pb-5">
+                             <div class="grid md:grid-cols-2 gap-4 pt-4 border-t">
+                                <div><h4 class="font-bold">Bayesiana</h4><p>La información previa se incorpora formalmente a través de la distribución prior.</p></div>
+                                <div><h4 class="font-bold">Frecuentista</h4><p>Generalmente no se incorpora formalmente, aunque puede guiar el diseño del estudio.</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="applications" class="page-content hidden">
+                 <div class="text-center mb-8 max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-bold mb-2">5. Aplicaciones Prácticas</h2>
+                    <p class="text-slate-600">La estadística bayesiana no es solo teórica; tiene un impacto enorme en el mundo real. Su capacidad para actualizar creencias y manejar la incertidumbre la hace invaluable en muchos campos. Explora algunas de sus aplicaciones más comunes.</p>
+                </div>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="app-card bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-bold mb-2">🩺 Medicina</h3>
+                        <p class="text-slate-600">Desde mejorar la precisión del diagnóstico médico hasta diseñar ensayos clínicos más eficientes y éticos y modelar la propagación de enfermedades.</p>
+                    </div>
+                    <div class="app-card bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-bold mb-2">🤖 Aprendizaje Automático</h3>
+                        <p class="text-slate-600">Es la base de los filtros de spam (Naive Bayes), sistemas de recomendación, modelos de tópicos para analizar texto y redes bayesianas para modelar dependencias complejas.</p>
+                    </div>
+                    <div class="app-card bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-bold mb-2">💹 Finanzas</h3>
+                        <p class="text-slate-600">Se utiliza para el modelado de riesgo, la predicción de precios de activos y en el desarrollo de estrategias de trading algorítmico que se adaptan a nueva información del mercado.</p>
+                    </div>
+                    <div class="app-card bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-bold mb-2">⚙️ Ingeniería y Fiabilidad</h3>
+                        <p class="text-slate-600">Ayuda a estimar la vida útil de componentes, predecir cuándo se necesitará mantenimiento y evaluar la fiabilidad de sistemas complejos.</p>
+                    </div>
+                     <div class="app-card bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-bold mb-2">🧪 A/B Testing</h3>
+                        <p class="text-slate-600">Permite determinar qué versión de una página web o producto es mejor de una manera más rápida y con resultados más interpretables que los métodos tradicionales.</p>
+                    </div>
+                    <div class="app-card bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-bold mb-2">🔭 Ciencia y Academia</h3>
+                        <p class="text-slate-600">Crucial en campos como la astrofísica para estimar parámetros cosmológicos, en ecología para estimar tamaños de poblaciones y en ciencias sociales para modelar decisiones.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const navTabs = document.querySelectorAll('.nav-tab');
+            const pageContents = document.querySelectorAll('.page-content');
+
+            navTabs.forEach(tab => {
+                tab.addEventListener('click', e => {
+                    e.preventDefault();
+                    
+                    navTabs.forEach(t => t.classList.replace('tab-active', 'tab-inactive'));
+                    tab.classList.replace('tab-inactive', 'tab-active');
+
+                    pageContents.forEach(content => content.classList.add('hidden'));
+                    const activeContent = document.querySelector(tab.getAttribute('href'));
+                    if(activeContent) activeContent.classList.remove('hidden');
+
+                    window.dispatchEvent(new Event('resize'));
+                });
+            });
+
+            const bayesChartCtx = document.getElementById('bayes-chart').getContext('2d');
+            let bayesChart;
+            
+            const prevalenceSlider = document.getElementById('prevalence');
+            const sensitivitySlider = document.getElementById('sensitivity');
+            const falsePositiveSlider = document.getElementById('false-positive');
+            
+            function calculatePosterior() {
+                const P_H = parseFloat(prevalenceSlider.value) / 100;
+                const P_E_given_H = parseFloat(sensitivitySlider.value) / 100;
+                const P_E_given_notH = parseFloat(falsePositiveSlider.value) / 100;
+                const P_notH = 1 - P_H;
+                const P_E = (P_E_given_H * P_H) + (P_E_given_notH * P_notH);
+                const P_H_given_E = (P_E_given_H * P_H) / P_E;
+
+                document.getElementById('prevalence-value').textContent = `${prevalenceSlider.value}%`;
+                document.getElementById('sensitivity-value').textContent = `${sensitivitySlider.value}%`;
+                document.getElementById('false-positive-value').textContent = `${falsePositiveSlider.value}%`;
+                document.getElementById('posterior-prob-display').textContent = `${(P_H_given_E * 100).toFixed(1)}%`;
+                
+                updateBayesChart(P_H, P_H_given_E);
+            }
+
+            function updateBayesChart(prior, posterior) {
+                if (bayesChart) {
+                    bayesChart.data.datasets[0].data = [prior, posterior];
+                    bayesChart.update();
+                } else {
+                    bayesChart = new Chart(bayesChartCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Creencia Inicial (Prior)', 'Creencia Actualizada (Posterior)'],
+                            datasets: [{
+                                label: 'Probabilidad de tener la enfermedad',
+                                data: [prior, posterior],
+                                backgroundColor: ['rgba(251, 146, 60, 0.6)', 'rgba(59, 130, 246, 0.6)'],
+                                borderColor: ['rgba(251, 146, 60, 1)', 'rgba(59, 130, 246, 1)'],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { beginAtZero: true, max: 1, ticks: { callback: value => value * 100 + '%' } }
+                            },
+                            plugins: { legend: { display: false }, title: { display: true, text: 'Comparación de Probabilidad Antes y Después de la Evidencia' } }
+                        }
+                    });
+                }
+            }
+
+            prevalenceSlider.addEventListener('input', calculatePosterior);
+            sensitivitySlider.addEventListener('input', calculatePosterior);
+            falsePositiveSlider.addEventListener('input', calculatePosterior);
+            
+            calculatePosterior();
+
+
+            const distributionsChartCtx = document.getElementById('distributions-chart').getContext('2d');
+            const posteriorSummaryChartCtx = document.getElementById('posterior-summary-chart').getContext('2d');
+            let distributionsChart, posteriorSummaryChart;
+
+            const jStat = {
+                beta: {
+                    pdf: function(x, alpha, beta) {
+                        if (x < 0 || x > 1) return 0;
+                        const B = (this.gamma(alpha) * this.gamma(beta)) / this.gamma(alpha + beta);
+                        return (Math.pow(x, alpha - 1) * Math.pow(1 - x, beta - 1)) / B;
+                    },
+                    mean: (alpha, beta) => alpha / (alpha + beta),
+                    mode: (alpha, beta) => (alpha > 1 && beta > 1) ? (alpha - 1) / (alpha + beta - 2) : NaN,
+                    median: function(alpha, beta) {
+                        if(alpha === beta) return 0.5;
+                         let p = 0.5, lower = 0, upper = 1;
+                         for (let i = 0; i < 32; i++) {
+                             if (this.cdf(p, alpha, beta) < 0.5) { // Corrected: this.cdf instead of this.beta.cdf
+                                 lower = p;
+                                 p = (p + upper) / 2;
+                             } else {
+                                 upper = p;
+                                 p = (p + lower) / 2;
+                             }
+                         }
+                         return p;
+                    },
+                     cdf: function(x, alpha, beta) {
+                         let bt = Math.exp(this.gammaln(alpha + beta) - this.gammaln(alpha) - this.gammaln(beta) + alpha * Math.log(x) + beta * Math.log(1 - x));
+                         if (x < (alpha + 1) / (alpha + beta + 2)) {
+                             return bt * this.betacf(x, alpha, beta) / alpha;
+                         } else {
+                             return 1 - bt * this.betacf(1 - x, beta, alpha) / beta;
+                         }
+                     },
+                     inv: function(p, alpha, beta) {
+                         let x = 0.5, a = 0, b = 1;
+                         for (let i = 0; i < 32; i++) {
+                             const err = this.cdf(x, alpha, beta) - p; // Corrected: this.cdf instead of this.beta.cdf
+                             if (err > 0) { b = x; } else { a = x; }
+                             x = (a + b) / 2;
+                         }
+                         return x;
+                     },
+                    gammaln: function(x) {
+                        let j = 0;
+                        const cof = [
+                            76.18009172947146, -86.50532032941677, 24.01409824083091,
+                            -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5
+                        ];
+                        let ser = 1.000000000190015;
+                        let tmp = x + 5.5;
+                        tmp -= (x + 0.5) * Math.log(tmp);
+                        for (; j < 6; j++) { ser += cof[j] / ++x; }
+                        return Math.log(2.5066282746310005 * ser / x) - tmp;
+                    },
+                    betacf: function(x, a, b) {
+                        let m = 1, m2 = 2;
+                        let aa, c, d, del, h;
+                        let qab = a + b, qap = a + 1, qam = a - 1;
+                        c = 1;
+                        d = 1 - qab * x / qap;
+                        if (Math.abs(d) < 1e-30) d = 1e-30;
+                        d = 1 / d;
+                        h = d;
+                        while (m <= 100) {
+                            m2 = 2 * m;
+                            aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+                            d = 1 + aa * d;
+                            if (Math.abs(d) < 1e-30) d = 1e-30;
+                            c = 1 + aa / c;
+                            if (Math.abs(c) < 1e-30) c = 1e-30;
+                            d = 1 / d;
+                            h *= d * c;
+                            aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+                            d = 1 + aa * d;
+                            if (Math.abs(d) < 1e-30) d = 1e-30;
+                            c = 1 + aa / c;
+                            if (Math.abs(c) < 1e-30) c = 1e-30;
+                            d = 1 / d;
+                            del = d * c;
+                            h *= del;
+                            if (Math.abs(del - 1.0) < 3e-7) break;
+                            m++;
+                        }
+                        return h;
+                    },
+                    gamma: function(x) { return Math.exp(this.gammaln(x)); }
+                },
+                binomial: {
+                    pdf: function(k, n, p) {
+                        if (k < 0 || k > n) return 0;
+                        const logB = jStat.beta.gammaln(n + 1) - jStat.beta.gammaln(k + 1) - jStat.beta.gammaln(n - k + 1);
+                        return Math.exp(logB + k * Math.log(p) + (n - k) * Math.log(1 - p));
+                    }
+                }
+            };
+
+            function updateDistributionCharts() {
+                const alpha = parseFloat(document.getElementById('prior-alpha').value);
+                const beta = parseFloat(document.getElementById('prior-beta').value);
+                const n = parseInt(document.getElementById('trials').value);
+                let k = parseInt(document.getElementById('heads').value);
+
+                if (k > n) {
+                    k = n;
+                    document.getElementById('heads').value = n;
+                }
+
+                if (isNaN(alpha) || isNaN(beta) || isNaN(n) || isNaN(k) || alpha <= 0 || beta <= 0) return;
+
+                const post_alpha = alpha + k;
+                const post_beta = beta + (n - k);
+                
+                document.getElementById('post-alpha').textContent = post_alpha.toFixed(1);
+                document.getElementById('post-beta').textContent = post_beta.toFixed(1);
+                
+                const labels = Array.from({length: 101}, (_, i) => i / 100);
+                const priorData = labels.map(x => jStat.beta.pdf(x, alpha, beta));
+                const posteriorData = labels.map(x => jStat.beta.pdf(x, post_alpha, post_beta));
+                const likelihoodData = labels.map(p => jStat.binomial.pdf(k, n, p));
+                
+                const maxLikelihood = Math.max(...likelihoodData.filter(val => isFinite(val) && !isNaN(val)));
+                const maxPrior = Math.max(...priorData.filter(val => isFinite(val) && !isNaN(val)));
+                const maxPosterior = Math.max(...posteriorData.filter(val => isFinite(val) && !isNaN(val)));
+                const overallMax = Math.max(maxPrior, maxPosterior, 0.1); // Ensure overallMax is not 0
+
+                const scaledLikelihoodData = likelihoodData.map(d => (maxLikelihood > 0 && isFinite(d)) ? (d / maxLikelihood) * overallMax : 0);
+
+
+                if (distributionsChart) {
+                    distributionsChart.data.datasets[0].data = priorData;
+                    distributionsChart.data.datasets[1].data = scaledLikelihoodData;
+                    distributionsChart.data.datasets[2].data = posteriorData;
+                    distributionsChart.options.scales.y.max = overallMax * 1.1;
+                    distributionsChart.update();
+                } else {
+                     distributionsChart = new Chart(distributionsChartCtx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: 'Prior', data: priorData, borderColor: 'rgba(251, 146, 60, 1)', fill: false, borderWidth: 2, pointRadius: 0 },
+                                { label: 'Verosimilitud (escalada)', data: scaledLikelihoodData, borderColor: 'rgba(22, 163, 74, 1)', fill: false, borderWidth: 2, borderDash: [5, 5], pointRadius: 0 },
+                                { label: 'Posterior', data: posteriorData, borderColor: 'rgba(59, 130, 246, 1)', fill: false, borderWidth: 3, pointRadius: 0 },
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: { y: { beginAtZero: true, max: overallMax * 1.1 }, x: { title: { display: true, text: 'Probabilidad de Cara (p)' } } },
+                            plugins: { title: { display: true, text: 'De la Creencia Inicial a la Actualizada' } }
+                        }
+                    });
+                }
+                updateInferenceSection(post_alpha, post_beta);
+            }
+            
+            function updateInferenceSection(alpha, beta) {
+                const map = jStat.beta.mode(alpha, beta);
+                const mean = jStat.beta.mean(alpha, beta);
+                const median = jStat.beta.median(alpha, beta);
+
+                document.getElementById('map-value').textContent = isNaN(map) ? 'N/A' : map.toFixed(3);
+                document.getElementById('mean-value').textContent = mean.toFixed(3);
+                document.getElementById('median-value').textContent = isNaN(median) ? 'N/A' : median.toFixed(3);
+
+
+                const credLevel = parseFloat(document.getElementById('cred-interval-slider').value) / 100;
+                document.getElementById('cred-interval-value').textContent = `${(credLevel * 100).toFixed(0)}%`;
+                
+                const lowerTail = (1 - credLevel) / 2;
+                const upperTail = 1 - lowerTail;
+                const lowerBound = jStat.beta.inv(lowerTail, alpha, beta);
+                const upperBound = jStat.beta.inv(upperTail, alpha, beta);
+
+                document.getElementById('cred-interval-range').textContent = `${lowerBound.toFixed(2)} y ${upperBound.toFixed(2)}`;
+
+                const labels = Array.from({length: 101}, (_, i) => i / 100);
+                const posteriorData = labels.map(x => jStat.beta.pdf(x, alpha, beta));
+
+                 const currentAnnotations = {
+                    meanLine: { type: 'line', xMin: mean, xMax: mean, borderColor: 'rgb(22, 163, 74)', borderWidth: 2, label: { content: `Media: ${mean.toFixed(2)}`, enabled: true, position: 'center', yAdjust: -10 } },
+                    credInterval: { type: 'box', xMin: lowerBound, xMax: upperBound, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 0)', borderWidth: 1 }
+                };
+                if (!isNaN(map)) {
+                    currentAnnotations.modeLine = { type: 'line', xMin: map, xMax: map, borderColor: 'rgb(234, 88, 12)', borderWidth: 2, borderDash: [6, 6], label: { content: `Moda: ${map.toFixed(2)}`, enabled: true, position: 'start', yAdjust: 10 }};
+                }
+                 if (!isNaN(median)) {
+                    currentAnnotations.medianLine = { type: 'line', xMin: median, xMax: median, borderColor: 'rgb(168, 85, 247)', borderWidth: 2, borderDash: [3, 3], label: { content: `Mediana: ${median.toFixed(2)}`, enabled: true, position: 'end', yAdjust: -20 }};
+                }
+
+
+                if (posteriorSummaryChart) {
+                    posteriorSummaryChart.data.datasets[0].data = posteriorData;
+                    posteriorSummaryChart.options.plugins.annotation.annotations = currentAnnotations;
+                    posteriorSummaryChart.update();
+                } else {
+                    posteriorSummaryChart = new Chart(posteriorSummaryChartCtx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Distribución Posterior',
+                                data: posteriorData,
+                                borderColor: 'rgba(59, 130, 246, 1)',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                fill: true,
+                                borderWidth: 2,
+                                pointRadius: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                             plugins: {
+                                legend: { display: false },
+                                title: { display: true, text: 'Resumen de la Distribución Posterior' },
+                                annotation: { annotations: currentAnnotations }
+                            },
+                            scales: {
+                                y: { beginAtZero: true },
+                                x: { title: { display: true, text: 'Probabilidad de Cara (p)' } }
+                            }
+                        }
+                    });
+                }
+            }
+
+            document.getElementById('prior-alpha').addEventListener('input', updateDistributionCharts);
+            document.getElementById('prior-beta').addEventListener('input', updateDistributionCharts);
+            document.getElementById('trials').addEventListener('input', updateDistributionCharts);
+            document.getElementById('heads').addEventListener('input', updateDistributionCharts);
+            document.getElementById('cred-interval-slider').addEventListener('input', updateDistributionCharts);
+            
+            updateDistributionCharts();
+
+            const accordionItems = document.querySelectorAll('.accordion-item');
+            accordionItems.forEach(item => {
+                const header = item.querySelector('.accordion-header');
+                const content = item.querySelector('.accordion-content');
+                const icon = item.querySelector('.accordion-icon');
+                header.addEventListener('click', () => {
+                    if (content.style.maxHeight) {
+                        content.style.maxHeight = null;
+                        icon.textContent = '+';
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                        icon.textContent = '-';
+                    }
+                });
+            });
+
+        });
+    </script>
+</body>
+</html>
