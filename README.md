@@ -24,6 +24,9 @@ Cada directorio incluye ejemplos interactivos, explicaciones detalladas y ejerci
 - **🤖 Tutorial Scikit-learn**  
   Introducción al aprendizaje automático con Scikit-learn: regresión, clasificación, validación cruzada, pipelines y métricas.
 
+- **📃 Página Exploratoria de Estadistica Bayesiana**
+  Adicional a este tutorial, se incluye una página exploratoria de estadística bayesiana, que con un ejemplo práctico, muestra cómo se puede aplicar la estadística bayesiana en problemas de probabilidad. Accede haciendo clic aquí: **[Explorador Interactivo de Estadística Bayesiana](https://ederlara.github.io/CuadernosPythonParaML/)**
+
 ## 🚀 Requisitos
 
 - Python 3.8 o superior
